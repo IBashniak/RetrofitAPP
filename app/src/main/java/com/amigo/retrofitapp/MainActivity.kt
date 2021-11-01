@@ -1,12 +1,10 @@
 package com.amigo.retrofitapp
 
-import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.ListView
 import android.widget.Toast
 
-import dto.Results
+import dto.SuperHero
 
 import android.widget.ArrayAdapter
 
@@ -26,32 +24,28 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-
         getSuperHeroes()
     }
 
     private fun getSuperHeroes() {
-        RetrofitClient.instance?.myApi?.getSuperHeroes()?.enqueue(object : Callback<List<Results>> {
+        RetrofitClient.heroesApi.getSuperHeroes().enqueue(object : Callback<List<SuperHero>> {
             override fun onResponse(
-                call: Call<List<Results>>,
-                response: Response<List<Results>>
+                call: Call<List<SuperHero>>,
+                response: Response<List<SuperHero>>
             ) {
-                val myHeroList = response.body()
-                val oneHeroes = mutableListOf<String>()
-
-                myHeroList?.map { it ->
-                    oneHeroes.add(it.superHeroName)
-                }
+                val heroesList = response.body()?.map { it ->
+                    it.superHeroName
+                }?: emptyList<SuperHero>()
 
                 binding.superListView.adapter =
                     ArrayAdapter(
                         applicationContext,
                         android.R.layout.simple_list_item_1,
-                        oneHeroes
+                        heroesList
                     )
             }
 
-            override fun onFailure(call: Call<List<Results>>, t: Throwable) {
+            override fun onFailure(call: Call<List<SuperHero>>, t: Throwable) {
                 Toast.makeText(applicationContext, "An error has occured", Toast.LENGTH_LONG)
                     .show()
             }
