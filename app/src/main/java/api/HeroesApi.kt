@@ -7,7 +7,7 @@ import retrofit2.http.GET
 
 interface HeroesApi {
     @GET("marvel")
-    fun getSuperHeroes(): Call<List<SuperHero>>
+    suspend fun getSuperHeroes(): List<SuperHero>
 
     companion object {
         const val BASE_URL = "https://simplifiedcoding.net/demos/"

@@ -1,22 +1,35 @@
 package com.amigo.retrofitapp
 
+
+import android.R
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Toast
-
-import dto.SuperHero
-
+import android.util.Log
 import android.widget.ArrayAdapter
-
+import dto.SuperHero
 import client.RetrofitClient
 import com.amigo.retrofitapp.databinding.ActivityMainBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.*
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private var coroutineScope = createCoroutineScope()
+    private fun createCoroutineScope() = CoroutineScope(Job() + Dispatchers.IO)
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(
+            "MainActivity",
+            "Coroutine exception",
+            throwable
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel("It's time")
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,28 +40,23 @@ class MainActivity : AppCompatActivity() {
         getSuperHeroes()
     }
 
+    private suspend fun onResponse(heroes: List<SuperHero>) = withContext(Dispatchers.Main) {
+        val heroesNameList = heroes.map { it ->
+            it.superHeroName
+        }
+
+        binding.superListView.adapter =
+            ArrayAdapter(
+                applicationContext,
+                R.layout.simple_list_item_1,
+                heroesNameList
+            )
+    }
+
     private fun getSuperHeroes() {
-        RetrofitClient.heroesApi.getSuperHeroes().enqueue(object : Callback<List<SuperHero>> {
-            override fun onResponse(
-                call: Call<List<SuperHero>>,
-                response: Response<List<SuperHero>>
-            ) {
-                val heroesList = response.body()?.map { it ->
-                    it.superHeroName
-                }?: emptyList<SuperHero>()
-
-                binding.superListView.adapter =
-                    ArrayAdapter(
-                        applicationContext,
-                        android.R.layout.simple_list_item_1,
-                        heroesList
-                    )
-            }
-
-            override fun onFailure(call: Call<List<SuperHero>>, t: Throwable) {
-                Toast.makeText(applicationContext, "An error has occured", Toast.LENGTH_LONG)
-                    .show()
-            }
-        })
+        coroutineScope.launch(exceptionHandler) {
+            val heroes = RetrofitClient.heroesApi.getSuperHeroes()
+            onResponse(heroes)
+        }
     }
 }
